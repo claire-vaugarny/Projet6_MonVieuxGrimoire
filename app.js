@@ -4,6 +4,7 @@ const app = express();
 
 const authRoutes = require('./routes/user');
 const booksRoutes = require('./routes/books');
+const path = require('path');
 
 mongoose.connect('mongodb+srv://bob:QOsfqtT8cjfyZmQM@clusterpremiereapi.wpff5.mongodb.net/?retryWrites=true&w=majority&appName=ClusterPremiereAPI',
   { useNewUrlParser: true, useUnifiedTopology: true })
@@ -29,5 +30,6 @@ app.use((req, res, next) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/books', booksRoutes);
+app.use('/images', express.static(path.join(__dirname, 'images'))); //pour les fichiers statiques comme les images
 
 module.exports = app;
