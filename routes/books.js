@@ -6,8 +6,8 @@ const multer = require('../middlewares/multer-config');
 const booksCtrl = require('../controllers/books')
 
 router.get('/', booksCtrl.getAllBooks);
+router.get('/bestrating', booksCtrl.bestRatingBooks); //route statique avant la route dynamique
 router.get('/:id', booksCtrl.getOneBook);
-router.get('/bestrating', booksCtrl.bestRatingBooks);
 
 router.post('/', auth, multer, booksCtrl.createBook);
 router.post('/:id/rating', auth, booksCtrl.newRatingBook); //pas de fichier lors de l'ajout d'une évaluatioin

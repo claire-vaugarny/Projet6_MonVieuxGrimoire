@@ -9,7 +9,6 @@ const MIME_TYPES = {
 // Définition de la configuration du stockage avec multer
 const storage = multer.diskStorage({
     destination: (req, file, callback) => {
-        console.log('Détails du fichier:', file);
         callback(null, 'images');
     },
 
