@@ -30,7 +30,7 @@ exports.createBook = (req, res, next) => {
     const book = new Book({
         ...bookObject,
         userId: req.auth.userId,
-        ImageURL: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
     });
 
     book.save()
@@ -82,7 +82,7 @@ exports.newRatingBook = (req, res, next) => {
 exports.modifyBook = (req, res, next) => {
     const thingObject = req.file ? {
         ...JSON.parse(req.body.book),
-        ImageURL: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
     } : { ...req.body };
     delete thingObject._userId;
     Book.findOne({ _id: req.params.id })
@@ -115,7 +115,7 @@ exports.deleteBook = (req, res, next) => {
                     return res.status(401).json({ message: 'Non autorisé' });
                 }
                 // Récupérer le nom du fichier image pour le supprimer
-                const filename = book.ImageURL.split('/images/')[1];
+                const filename = book.imageUrl.split('/images/')[1];
                 // Supprimer le fichier image associé au livre
                 fs.unlink(`images/${filename}`, (err) => {
                     if (err) {

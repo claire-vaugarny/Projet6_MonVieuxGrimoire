@@ -1,12 +1,13 @@
 const mongoose = require('mongoose');
 const express = require('express');
 const app = express();
+const config = require('./config').get(process.env.MONGODB_URI)
 
 const authRoutes = require('./routes/user');
 const booksRoutes = require('./routes/books');
 const path = require('path');
 
-mongoose.connect('mongodb+srv://bob:QOsfqtT8cjfyZmQM@clusterpremiereapi.wpff5.mongodb.net/?retryWrites=true&w=majority&appName=ClusterPremiereAPI',
+mongoose.connect(config.MONGODB_URI,
   { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log('Connexion à MongoDB réussie !');
