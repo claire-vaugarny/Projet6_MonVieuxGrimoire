@@ -24,12 +24,29 @@ exports.bestRatingBooks = (req, res, next) => {
 
 // // // méthodes POST (2)
 exports.createBook = (req, res, next) => {
+    // Vérification que le body de la requête est au format JSON
+    if (!req.is('application/json')) {
+        return res.status(400).json({ message: "Erreur interne : requête invalide" });
+    };
     const bookObject = JSON.parse(req.body.book);
-    delete bookObject._id;
-    delete bookObject._userId;
+    //vérification que le tableau ratings ne contient qu'un seul avis
+    if (bookObject.ratings.length !== 1) {
+        return res.status(400).json({ message: "Erreur interne : requête invalide" });
+    }
+    //vérification que la note est un entier entre 0 et 5 inclus
+    if (!Number.isInteger(bookObject.ratings[0].grade) || bookObject.ratings[0].grade < 0 || bookObject.ratings[0].grade > 5) {
+        return res.status(400).json({ message: "Erreur interne : requête invalide" });
+    };
+
+    // Création de l'objet Book avec les données validées
     const book = new Book({
         ...bookObject,
-        userId: req.auth.userId,
+        userId: req.auth.userId, // Remplacement du userId par celui validé par l'authentification
+        ratings: [{
+            userId: req.auth.userId,
+            grade: bookObject.ratings[0].grade
+        }],
+        averageRating: bookObject.ratings[0].grade, // Ici, la note de ce premier avis devient la moyenne
         imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
     });
 
@@ -44,7 +61,14 @@ function calculateAverageRating(ratings) {
     return total / ratings.length;
 }
 exports.newRatingBook = (req, res, next) => {
-    const { userId, rating } = req.body;
+    const userId = req.auth.userId;
+    const rating = req.body.rating;
+
+    //vérification que la note est un entier entre 0 et 5 inclus
+    if (!Number.isInteger(rating) || rating < 0 || rating > 5) {
+        return res.status(400).json({ message: "Erreur interne : requête invalide" });
+    };
+
     const bookId = String(req.params.id); // L'ID du livre est récupéré à partir de l'URL
 
     Book.findOne({ _id: bookId })
@@ -80,17 +104,22 @@ exports.newRatingBook = (req, res, next) => {
 
 // // // méthode PUT (1)
 exports.modifyBook = (req, res, next) => {
-    const thingObject = req.file ? {
+    // Vérification du format de la requête uniquement si aucune image n'est envoyée
+if (!req.file && !req.is('application/json')) {
+    return res.status(400).json({ message: "Erreur interne : requête invalide" });
+}
+
+    const bookObject = req.file ? {
         ...JSON.parse(req.body.book),
         imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
     } : { ...req.body };
-    delete thingObject._userId;
+    delete bookObject.userId;
     Book.findOne({ _id: req.params.id })
         .then((book) => {
             if (book.userId != req.auth.userId) {
                 res.status(401).json({ message: 'Non-autorisé' });
             } else {
-                Book.updateOne({ _id: req.params.id }, { ...thingObject, _id: req.params.id })
+                Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
                     .then(() => res.status(200).json({ message: 'Objet modifié !' }))
                     .catch(error => res.status(400).json({ error }));
             }
@@ -108,11 +137,11 @@ exports.deleteBook = (req, res, next) => {
             // Si le livre n'existe pas
             if (!book) {
                 return res.status(404).json({ message: 'Livre non trouvé.' });
-            }else{
+            } else {
 
                 // Vérification si l'utilisateur est bien celui qui a créé le livre
                 if (book.userId.toString() !== req.auth.userId.toString()) {
-                    return res.status(401).json({ message: 'Non autorisé' });
+                    return res.status(403).json({ message: 'Non autorisé' });
                 }
                 // Récupérer le nom du fichier image pour le supprimer
                 const filename = book.imageUrl.split('/images/')[1];
@@ -121,15 +150,15 @@ exports.deleteBook = (req, res, next) => {
                     if (err) {
                         return res.status(500).json({ message: 'Erreur lors de la suppression de l\'image.', error: err });
                     }
-                    
+
                     // Supprimer le livre de la base de données
                     book.deleteOne()
-                    .then(() => {
-                        res.status(200).json({ message: 'Livre supprimé avec succès.' });
-                    })
-                    .catch(error => {
-                        res.status(500).json({ message: 'Erreur lors de la suppression du livre.', error });
-                    });
+                        .then(() => {
+                            res.status(200).json({ message: 'Livre supprimé avec succès.' });
+                        })
+                        .catch(error => {
+                            res.status(500).json({ message: 'Erreur lors de la suppression du livre.', error });
+                        });
                 });
             }
         })

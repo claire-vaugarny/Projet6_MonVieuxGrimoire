@@ -13,9 +13,15 @@ const storage = multer.diskStorage({
     },
 
     filename: (req, file, callback) => {
-        const name = file.originalname.split(' ').join('_');
-        const extension = MIME_TYPES[file.mimetype];
-        callback(null, name + Date.now() + '.' + extension);
+        // Vérification du type MIME du fichier
+        const fileExtension  = MIME_TYPES[file.mimetype.toLowerCase()];
+        if (!fileExtension) {
+            return callback(new Error('Type de fichier non autorisé'), null);
+        }
+        // Création du nom du fichier
+        const name = file.originalname.split(' ').join('_'); // Remplace les espaces par des underscores
+        const sanitizedFileName = name.replace(/[^a-zA-Z0-9_-]/g, ''); // Supprime les caractères spéciaux
+        callback(null, sanitizedFileName + Date.now() + '.' + fileExtension);
     }
 });
 

@@ -5,6 +5,21 @@ const jwt = require('jsonwebtoken');
 // // // // méthodes POST (2)
 
 exports.signup = (req, res, next) => {
+    // Vérification que la requête est bien au format JSON
+    if (!req.is('application/json')) {
+        return res.status(400).json({ message: "Erreur interne : requête invalide" });
+    };
+    //vérification que l'email est au bon format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(req.body.email)) {
+        return res.status(400).json({ message: 'Email invalide' });
+    };
+    //vérification que le mot de passe est bien une chaîne de caractères
+    if (typeof req.body.password !== "string") {
+        return res.status(400).json({ message: "Le mot de passe doit être une chaîne de caractères" });
+    }
+
+
     bcrypt.hash(req.body.password, 10)
         .then(hash => {
             const user = new User({
@@ -19,6 +34,21 @@ exports.signup = (req, res, next) => {
 };
 
 exports.login = (req, res, next) => {
+    // Vérification que la requête est bien au format JSON
+    if (!req.is('application/json')) {
+        return res.status(400).json({ message: "Erreur interne : requête invalide" });
+    };
+    //vérification que l'email est au bon format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(req.body.email)) {
+        return res.status(400).json({ message: 'Email invalide' });
+    };
+    //vérification que le mot de passe est bien une chaîne de caractères
+    if (typeof req.body.password !== "string") {
+        return res.status(400).json({ message: "Le mot de passe doit être une chaîne de caractères" });
+    }
+
+
     User.findOne({ email: req.body.email })
         .then(user => {
             if (!user) {
@@ -32,8 +62,8 @@ exports.login = (req, res, next) => {
                     res.status(200).json({
                         userId: user._id,
                         token: jwt.sign(
-                            { userId: user._id },
-                            'RANDOM_TOKEN_SECRET',
+                            { userId: user._id }, //payload
+                            'a3f1c2d9e6b74f85a9d0e3c4b5f6721a',
                             { expiresIn: '24h' }
                         )
                     });
@@ -41,4 +71,4 @@ exports.login = (req, res, next) => {
                 .catch(error => res.status(500).json({ error }));
         })
         .catch(error => res.status(500).json({ error }));
- }
+}
