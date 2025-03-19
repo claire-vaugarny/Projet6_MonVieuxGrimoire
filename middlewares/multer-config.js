@@ -25,5 +25,4 @@ const storage = multer.diskStorage({
     }
 });
 
-// Exportation de la configuration multer pour traiter un fichier 'image' envoyé dans une requête.
 module.exports = multer({ storage: storage }).single('image');

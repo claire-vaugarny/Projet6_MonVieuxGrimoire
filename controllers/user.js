@@ -1,6 +1,8 @@
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
 
 // // // // méthodes POST (2)
 
@@ -63,7 +65,7 @@ exports.login = (req, res, next) => {
                         userId: user._id,
                         token: jwt.sign(
                             { userId: user._id }, //payload
-                            'a3f1c2d9e6b74f85a9d0e3c4b5f6721a',
+                            process.env.JWT_SECRET, //clé secrète dans .env
                             { expiresIn: '24h' }
                         )
                     });
