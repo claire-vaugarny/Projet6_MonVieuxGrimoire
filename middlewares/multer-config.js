@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
         }
         // Création du nom du fichier
         const name = file.originalname.split(' ').join('_'); // Remplace les espaces par des underscores
-        const sanitizedFileName = name.replace(/[^a-zA-Z0-9_-]/g, ''); // Supprime les caractères spéciaux
+        const sanitizedFileName = name.replace(/[^a-zA-Z0-9_-]/g, '_'); // Supprime les caractères spéciaux
         callback(null, sanitizedFileName + Date.now() + '.' + fileExtension);
     }
 });

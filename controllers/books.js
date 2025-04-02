@@ -9,8 +9,21 @@ exports.getAllBooks = (req, res, next) => {
 }
 
 exports.getOneBook = (req, res, next) => {
+    // Vérification que l'ID n'est pas null, undefined ou une chaîne vide
+    if (!req.params.id) {
+        return res.status(404).json({ message: "Livre non trouvé : ID invalide" });
+    }
+
+    // Recherche du livre dans la base de données
     Book.findOne({ _id: req.params.id })
-        .then(book => res.status(200).json(book))
+        .then(book => {
+            if (!book) {
+                // Si aucun livre n'est trouvé, renvoyer une erreur 404
+                return res.status(404).json({ message: "Livre non trouvé" });
+            }
+            // Si le livre est trouvé, renvoyer les informations
+            res.status(200).json(book);
+        })
         .catch(error => res.status(404).json({ error }));
 }
 
@@ -28,7 +41,15 @@ exports.createBook = (req, res, next) => {
     if (!req.is('application/json')) {
         return res.status(400).json({ message: "Erreur interne : requête invalide" });
     };
-    const bookObject = JSON.parse(req.body.book);
+
+    let bookObject;
+    try {
+        // Tentative de parsing du corps de la requête pour vérifier le format JSON c'est à dire que l'on n'a pas {] par exemple
+        bookObject = JSON.parse(req.body.book);
+    } catch (error) {
+        return res.status(400).json({ message: "Erreur interne : requête invalide" });
+    }
+
     //vérification que le tableau ratings ne contient qu'un seul avis
     if (bookObject.ratings.length !== 1) {
         return res.status(400).json({ message: "Erreur interne : requête invalide" });
@@ -105,15 +126,25 @@ exports.newRatingBook = (req, res, next) => {
 // // // méthode PUT (1)
 exports.modifyBook = (req, res, next) => {
     // Vérification du format de la requête uniquement si aucune image n'est envoyée
-if (!req.file && !req.is('application/json')) {
-    return res.status(400).json({ message: "Erreur interne : requête invalide" });
-}
+    if (!req.file && !req.is('application/json')) {
+        return res.status(400).json({ message: "Erreur interne : requête invalide" });
+    }
+    let bookObject;
+    try {
+        // Si une image est envoyée, on parse le JSON et on ajoute l'URL de l'image
+        bookObject = req.file ? {
+            ...JSON.parse(req.body.book),
+            imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+        } : { ...req.body };
+    } catch (error) {
+        // Si le parsing échoue, on renvoie une erreur
+        return res.status(400).json({ message: "Erreur interne : requête invalide" });
+    }
 
-    const bookObject = req.file ? {
-        ...JSON.parse(req.body.book),
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-    } : { ...req.body };
     delete bookObject.userId;
+    delete bookObject.ratings;
+    delete bookObject.averageRating;
+
     Book.findOne({ _id: req.params.id })
         .then((book) => {
             if (book.userId != req.auth.userId) {
