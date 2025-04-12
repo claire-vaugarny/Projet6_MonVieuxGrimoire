@@ -1,5 +1,7 @@
 const Book = require('../models/book');
 const fs = require('fs');
+const path = require('path');
+
 
 // // // // méthodes GET (3)
 exports.getAllBooks = (req, res, next) => {
@@ -101,17 +103,15 @@ exports.newRatingBook = (req, res, next) => {
                     const newRating = { userId, grade: rating };
                     book.ratings.push(newRating);
 
-                    // Mise à jour de l'évaluation moyenne
-                    book.averageRating = calculateAverageRating(book.ratings);
+                    // Mise à jour de l'évaluation moyenne, arrondi à 2 chiffres après la virgule si nécessaire
+                    book.averageRating = Math.round(calculateAverageRating(book.ratings) * 100) / 100;
 
                     // Sauvegarde les modifications
                     book.save()
                         .then(updatedBook => {
-                            res.status(200).json({
-                                message: 'Note ajoutée avec succès', 
-                                book: updatedBook,
-                                id: updatedBook._id.toString(),  // Ajout du champ id au niveau de la réponse
-                            });
+                            res.status(200).json(
+                                updatedBook
+                            );
                         })
                         .catch(error => {
                             res.status(500).json({ message: 'Erreur lors de l\'ajout de la note.', error });
@@ -154,13 +154,29 @@ exports.modifyBook = (req, res, next) => {
             if (book.userId != req.auth.userId) {
                 res.status(401).json({ message: 'Non-autorisé' });
             } else {
+                // Si une nouvelle image est envoyée, on supprime l'ancienne image
+                if (req.file && book.imageUrl) {
+                    // Récupère le chemin de l'ancienne image
+                    const filename = book.imageUrl.split('/images/')[1];
+                    const filePath = path.join('images', filename);
+
+                    // Supprimer l'ancienne image
+                    fs.unlink(filePath, (err) => {
+                        if (err) {
+                            console.error('Erreur lors de la suppression de l\'ancienne image', err);
+                        }
+                    });
+                }
+
+                // Mise à jour du livre avec la nouvelle image ou sans image
                 Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
                     .then(() => res.status(200).json({ message: 'Objet modifié !' }))
                     .catch(error => res.status(400).json({ error }));
             }
         })
         .catch(error => res.status(404).json({ error }));
-}
+};
+
 
 // // // méthode DELETE (1)
 exports.deleteBook = (req, res, next) => {
